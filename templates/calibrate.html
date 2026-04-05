@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Calibrate Parking View</title>
+  <style>
+    body { background:#0b1d33; color:white; text-align:center; font-family:Arial; }
+    #canvas { border: 3px solid cyan; cursor: crosshair; }
+    #points { margin-top:15px; font-size:18px; }
+    button {
+        padding: 10px 18px;
+        margin-top: 20px;
+        background: #0af;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        font-size: 17px;
+        cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Parking Camera Calibration</h2>
+<p>Click 4 points in order: <b>Top-Left → Top-Right → Bottom-Right → Bottom-Left</b></p>
+
+<img id="video" src="/video_feed" style="display:none;">
+<canvas id="canvas"></canvas>
+
+<div id="points"></div>
+<button id="saveBtn" disabled>Save Calibration</button>
+
+<script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let points = [];
+
+video.onload = () => {
+  canvas.width = video.width = video.naturalWidth;
+  canvas.height = video.height = video.naturalHeight;
+  draw();
+};
+
+function draw(){
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  requestAnimationFrame(draw);
+}
+
+canvas.addEventListener("click", (e)=>{
+  const rect = canvas.getBoundingClientRect();
+  let x = e.clientX - rect.left;
+  let y = e.clientY - rect.top;
+  points.push([x, y]);
+  ctx.fillStyle = "red";
+  ctx.beginPath();
+  ctx.arc(x, y, 6, 0, Math.PI*2);
+  ctx.fill();
+
+  document.getElementById("points").innerText = JSON.stringify(points);
+
+  if(points.length === 4){
+    document.getElementById("saveBtn").disabled = false;
+  }
+});
+
+document.getElementById("saveBtn").onclick = ()=>{
+  fetch("/calibrate", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({points:points})
+  }).then(r=>r.json()).then(d=>{
+    alert("✅ Calibration Saved! Restart Detection Page.\nMessage: " + d.message);
+    window.location.href = "/";
+  });
+};
+</script>
+
+</body>
+</html>

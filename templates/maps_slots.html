@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Draw Parking Slots</title>
+<style>
+  body { background:#09131e; color:white; text-align:center; }
+  canvas { border:3px solid #00ffff; margin-top:20px; }
+  #slotList { margin-top:15px; }
+  button { padding:10px 18px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<h2>Draw Parking Slots</h2>
+<p>Click to draw polygon points. Press ENTER to finish a slot.</p>
+<canvas id="canvas"></canvas>
+<div id="slotList"></div>
+<button onclick="save()">Save Slots</button>
+
+<script>
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
+let img = new Image();
+img.src = "/snapshot";
+img.onload = () => { canvas.width = img.width; canvas.height = img.height; ctx.drawImage(img,0,0); };
+
+let slots = [], current = [];
+
+canvas.onclick = (e)=>{
+  let r = canvas.getBoundingClientRect();
+  current.push([e.clientX - r.left, e.clientY - r.top]);
+  redraw();
+};
+
+document.addEventListener('keydown', e=>{
+  if(e.key==="Enter" && current.length>2){
+    slots.push({id:"S-"+(slots.length+1), points:current});
+    current = [];
+    redraw();
+    list();
+  }
+});
+
+function redraw(){
+  ctx.drawImage(img,0,0);
+  ctx.lineWidth=2;
+  slots.forEach(s=>{
+    ctx.strokeStyle="lime";
+    drawPoly(s.points);
+  });
+  ctx.strokeStyle="yellow";
+  drawPoly(current);
+}
+
+function drawPoly(p){
+  ctx.beginPath();
+  ctx.moveTo(p[0][0],p[0][1]);
+  p.forEach(pt=>ctx.lineTo(pt[0],pt[1]));
+  ctx.closePath();
+  ctx.stroke();
+}
+
+function list(){
+  document.getElementById("slotList").innerHTML = slots.map(s=>`${s.id}: ${s.points.length} points`).join("<br>");
+}
+
+function save(){
+  fetch("/save_slots",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(slots)})
+  .then(()=>alert("✅ Slots Saved! Restart video detection."));
+}
+</script>
+</body>
+</html>

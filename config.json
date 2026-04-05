@@ -1,0 +1,8 @@
+{
+  "cameras": {
+    "Cam 1": 0,
+    "Cam 2": "http://192.168.0.105:8080/video",
+    "Cam 3": "rtsp://192.168.0.120:554/live"
+  },
+  "calibration": {}
+}
